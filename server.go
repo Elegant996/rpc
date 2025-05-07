@@ -34,7 +34,7 @@ other methods will be ignored:
 
 In effect, the method must look schematically like
 
-  func (t *T) MethodName(ctx context.Context, argType T1, replyType *T2) error
+	func (t *T) MethodName(ctx context.Context, argType T1, replyType *T2) error
 
 where T1 and T2 can be marshaled by encoding/gob.
 These requirements apply even if a different codec is used.
@@ -96,58 +96,58 @@ Here is a simple example.  A server wishes to export an object of type Arith:
 
 The server calls (for HTTP service):
 
-	arith := new(Arith)
-	rpc.Register(arith)
-	rpc.HandleHTTP()
-	l, e := net.Listen("tcp", ":1234")
-	if e != nil {
-		log.Fatal("listen error:", e)
-	}
-	go http.Serve(l, nil)
+		arith := new(Arith)
+		rpc.Register(arith)
+		rpc.HandleHTTP()
+		l, e := net.Listen("tcp", ":1234")
+		if e != nil {
+			log.Fatal("listen error:", e)
+		}
+		go http.Serve(l, nil)
 
-  func (t *Arith) Multiply(ctx context.Context, args *Args, reply *int) error {
-  	*reply = args.A * args.B
-  	return nil
-  }
+	  func (t *Arith) Multiply(ctx context.Context, args *Args, reply *int) error {
+	  	*reply = args.A * args.B
+	  	return nil
+	  }
 
 At this point, clients can see a service "Arith" with methods "Arith.Multiply" and
 "Arith.Divide".  To invoke one, a client first dials the server:
 
-  func (t *Arith) Divide(ctx context.Context, args *Args, quo *Quotient) error {
-  	if args.B == 0 {
-  		return errors.New("divide by zero")
-  	}
-  	quo.Quo = args.A / args.B
-  	quo.Rem = args.A % args.B
-  	return nil
-  }
-		func (t *Arith) Divide(args *Args, quo *Quotient) error {
-			if args.B == 0 {
-				return errors.New("divide by zero")
+	  func (t *Arith) Divide(ctx context.Context, args *Args, quo *Quotient) error {
+	  	if args.B == 0 {
+	  		return errors.New("divide by zero")
+	  	}
+	  	quo.Quo = args.A / args.B
+	  	quo.Rem = args.A % args.B
+	  	return nil
+	  }
+			func (t *Arith) Divide(args *Args, quo *Quotient) error {
+				if args.B == 0 {
+					return errors.New("divide by zero")
+				}
+				quo.Quo = args.A / args.B
+				quo.Rem = args.A % args.B
+				return nil
 			}
-			quo.Quo = args.A / args.B
-			quo.Rem = args.A % args.B
-			return nil
-		}
 
 Then it can make a remote call:
 
-  // Synchronous call
-  args := &server.Args{7,8}
-  var reply int
-  err = client.Call(context.Background(), "Arith.Multiply", args, &reply)
-  if err != nil {
-  	log.Fatal("arith error:", err)
-  }
-  fmt.Printf("Arith: %d*%d=%d", args.A, args.B, reply)
+	// Synchronous call
+	args := &server.Args{7,8}
+	var reply int
+	err = client.Call(context.Background(), "Arith.Multiply", args, &reply)
+	if err != nil {
+		log.Fatal("arith error:", err)
+	}
+	fmt.Printf("Arith: %d*%d=%d", args.A, args.B, reply)
 
 or
 
-  // Asynchronous call
-  quotient := new(Quotient)
-  divCall := client.Go("Arith.Divide", args, quotient, nil)
-  replyCall := <-divCall.Done	// will be equal to divCall
-  // check errors, print, etc.
+	// Asynchronous call
+	quotient := new(Quotient)
+	divCall := client.Go("Arith.Divide", args, quotient, nil)
+	replyCall := <-divCall.Done	// will be equal to divCall
+	// check errors, print, etc.
 
 A server implementation will often provide a simple, type-safe wrapper for the
 client.
@@ -170,7 +170,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/keegancsmith/rpc/internal/svc"
+	"github.com/Elegant996/rpc/internal/svc"
 )
 
 const (

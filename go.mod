@@ -1,3 +1,5 @@
-module github.com/keegancsmith/rpc
+module github.com/Elegant996/rpc
 
-go 1.18
+go 1.24
+
+toolchain go1.24.2

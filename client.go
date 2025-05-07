@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keegancsmith/rpc/internal/svc"
+	"github.com/Elegant996/rpc/internal/svc"
 )
 
 // ServerError represents an error that has been returned from
