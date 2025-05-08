@@ -438,7 +438,7 @@ type gobServerCodec struct {
 	closed bool
 }
 
-func (c *gobServerCodec) ReadRequestHeader(ctx context.Context, r *Request) context.Context error {
+func (c *gobServerCodec) ReadRequestHeader(ctx context.Context, r *Request) (context.Context, error) {
 	return ctx, c.dec.Decode(r)
 }
 

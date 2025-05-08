@@ -158,7 +158,7 @@ func (client *Client) send(ctx context.Context, call *Call) {
 func (client *Client) input() {
 	var err error
 	var response Response
-	var ctx := context.TODO()
+	ctx := context.TODO()
 	for err == nil {
 		response = Response{}
 		err = client.codec.ReadResponseHeader(ctx, &response)
