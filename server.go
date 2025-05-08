@@ -183,7 +183,7 @@ const (
 
 // Precompute the reflect type for error.
 var typeOfError = reflect.TypeFor[error]()
-var typeOfCtx   = reflect.TypeFor[*context.Context]()
+var typeOfCtx   = reflect.TypeFor[context.Context]()
 
 type methodType struct {
 	sync.Mutex // protects counters
