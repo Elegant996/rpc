@@ -269,7 +269,7 @@ type gobClientCodec struct {
 	encBuf *bufio.Writer
 }
 
-func (c *gobClientCodec) WriteRequest(r *Request, body any) (err error) {
+func (c *gobClientCodec) WriteRequest(ctx context.Context, r *Request, body any) (err error) {
 	if err = c.enc.Encode(r); err != nil {
 		return
 	}
