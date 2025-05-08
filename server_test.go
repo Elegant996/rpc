@@ -412,9 +412,9 @@ func (codec *CodecEmulator) Call(ctx context.Context, serviceMethod string, args
 	codec.err = nil
 	var serverError error
 	if codec.server == nil {
-		serverError = ServeRequest(codec)
+		serverError = ServeRequest(ctx, codec)
 	} else {
-		serverError = codec.server.ServeRequest(codec)
+		serverError = codec.server.ServeRequest(ctx, codec)
 	}
 	if codec.err == nil && serverError != nil {
 		codec.err = serverError
@@ -462,7 +462,7 @@ func testServeRequest(t *testing.T, server *Server) {
 
 	args := &Args{7, 8}
 	reply := new(Reply)
-	err := client.Call(ctx, "Arith.Add", args, reply)
+	err := client.Call(context.Background(), "Arith.Add", args, reply)
 	if err != nil {
 		t.Errorf("Add: expected no error but got string %q", err.Error())
 	}
@@ -572,7 +572,7 @@ func testSendDeadlock(client *Client) {
 	}()
 	args := &Args{7, 8}
 	reply := new(Reply)
-	client.Call(ctx, "Arith.Add", args, reply)
+	client.Call(context.Background(), "Arith.Add", args, reply)
 }
 
 func dialDirect() (*Client, error) {
@@ -594,7 +594,7 @@ func countMallocs(dial func() (*Client, error), t *testing.T) float64 {
 	args := &Args{7, 8}
 	reply := new(Reply)
 	return testing.AllocsPerRun(100, func() {
-		err := client.Call(ctx, "Arith.Add", args, reply)
+		err := client.Call(context.Background(), "Arith.Add", args, reply)
 		if err != nil {
 			t.Errorf("Add: expected no error but got string %q", err.Error())
 		}
@@ -647,7 +647,7 @@ func TestClientWriteError(t *testing.T) {
 	defer c.Close()
 
 	res := false
-	err := c.Call(ctx, "foo", 1, &res)
+	err := c.Call(context.Background(), "foo", 1, &res)
 	if err == nil {
 		t.Fatal("expected error")
 	}
