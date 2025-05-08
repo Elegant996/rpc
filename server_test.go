@@ -422,7 +422,7 @@ func (codec *CodecEmulator) Call(ctx context.Context, serviceMethod string, args
 	return codec.err
 }
 
-func (codec *CodecEmulator) ReadRequestHeader(ctx, context.Background, req *Request) error {
+func (codec *CodecEmulator) ReadRequestHeader(ctx context.Context, req *Request) error {
 	req.ServiceMethod = codec.serviceMethod
 	req.Seq = 0
 	return nil
@@ -540,7 +540,7 @@ func (WriteFailCodec) ReadResponseHeader(ctx context.Context, *Response) error {
 	select {}
 }
 
-func (WriteFailCodec) ReadResponseBody( ctx context.Context, any) error {
+func (WriteFailCodec) ReadResponseBody(ctx context.Context, any) error {
 	select {}
 }
 
