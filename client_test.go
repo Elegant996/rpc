@@ -18,9 +18,9 @@ type shutdownCodec struct {
 	closed    bool
 }
 
-func (c *shutdownCodec) WriteRequest(*Request, any) error { return nil }
-func (c *shutdownCodec) ReadResponseBody(any) error       { return nil }
-func (c *shutdownCodec) ReadResponseHeader(*Response) error {
+func (c *shutdownCodec) WriteRequest(ctx context.Context, *Request, any) error { return nil }
+func (c *shutdownCodec) ReadResponseBody(ctx context.Context, any) error       { return nil }
+func (c *shutdownCodec) ReadResponseHeader(ctx context.Context, *Response) error {
 	c.responded <- 1
 	return errors.New("shutdownCodec ReadResponseHeader")
 }
@@ -68,7 +68,7 @@ func TestGobError(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	go Accept(listen)
+	go Accept(context.Background(), listen)
 
 	client, err := Dial("tcp", listen.Addr().String())
 	if err != nil {
@@ -91,13 +91,13 @@ type ClientCodecError struct {
 	WriteRequestError error
 }
 
-func (c *ClientCodecError) WriteRequest(*Request, any) error {
+func (c *ClientCodecError) WriteRequest(ctx context.Context, *Request, any) error {
 	return c.WriteRequestError
 }
-func (c *ClientCodecError) ReadResponseHeader(*Response) error {
+func (c *ClientCodecError) ReadResponseHeader(ctx context.Context, *Response) error {
 	return nil
 }
-func (c *ClientCodecError) ReadResponseBody(any) error {
+func (c *ClientCodecError) ReadResponseBody(ctx context.Context, any) error {
 	return nil
 }
 func (c *ClientCodecError) Close() error {

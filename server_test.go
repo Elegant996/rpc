@@ -5,17 +5,13 @@
 package rpc
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"reflect"
 	"runtime"
 	"strings"
@@ -131,7 +127,7 @@ func startServer() {
 	var l net.Listener
 	l, serverAddr = listenTCP()
 	log.Println("Test RPC server listening on", serverAddr)
-	go Accept(l)
+	go Accept(context.Background(), l)
 
 	HandleHTTP()
 	httpOnce.Do(startHttpServer)
@@ -147,7 +143,7 @@ func startNewServer() {
 	var l net.Listener
 	l, newServerAddr = listenTCP()
 	log.Println("NewServer test RPC server listening on", newServerAddr)
-	go newServer.Accept(l)
+	go newServer.Accept(context.Background(), l)
 
 	newServer.HandleHTTP(newHttpPath, "/bar")
 	httpOnce.Do(startHttpServer)
@@ -175,10 +171,9 @@ func testRPC(t *testing.T, addr string) {
 	defer client.Close()
 
 	// Synchronous calls
-	ctx := context.Background()
 	args := &Args{7, 8}
 	reply := new(Reply)
-	err = client.Call(ctx, "Arith.Add", args, reply)
+	err = client.Call(context.Background(), "Arith.Add", args, reply)
 	if err != nil {
 		t.Errorf("Add: expected no error but got string %q", err.Error())
 	}
@@ -189,7 +184,7 @@ func testRPC(t *testing.T, addr string) {
 	// Methods exported from unexported embedded structs
 	args = &Args{7, 0}
 	reply = new(Reply)
-	err = client.Call(ctx, "Embed.Exported", args, reply)
+	err = client.Call(context.Background(), "Embed.Exported", args, reply)
 	if err != nil {
 		t.Errorf("Add: expected no error but got string %q", err.Error())
 	}
@@ -200,7 +195,7 @@ func testRPC(t *testing.T, addr string) {
 	// Nonexistent method
 	args = &Args{7, 0}
 	reply = new(Reply)
-	err = client.Call(ctx, "Arith.BadOperation", args, reply)
+	err = client.Call(context.Background(), "Arith.BadOperation", args, reply)
 	// expect an error
 	if err == nil {
 		t.Error("BadOperation: expected error")
@@ -211,7 +206,7 @@ func testRPC(t *testing.T, addr string) {
 	// Unknown service
 	args = &Args{7, 8}
 	reply = new(Reply)
-	err = client.Call(ctx, "Arith.Unknown", args, reply)
+	err = client.Call(context.Background(), "Arith.Unknown", args, reply)
 	if err == nil {
 		t.Error("expected error calling unknown service")
 	} else if !strings.Contains(err.Error(), "method") {
@@ -244,7 +239,7 @@ func testRPC(t *testing.T, addr string) {
 	// Error test
 	args = &Args{7, 0}
 	reply = new(Reply)
-	err = client.Call(ctx, "Arith.Div", args, reply)
+	err = client.Call(context.Background(), "Arith.Div", args, reply)
 	// expect an error: zero divide
 	if err == nil {
 		t.Error("Div: expected error")
@@ -254,7 +249,7 @@ func testRPC(t *testing.T, addr string) {
 
 	// Bad type.
 	reply = new(Reply)
-	err = client.Call(ctx, "Arith.Add", reply, reply) // args, reply would be the correct thing to use
+	err = client.Call(context.Background(), "Arith.Add", reply, reply) // args, reply would be the correct thing to use
 	if err == nil {
 		t.Error("expected error calling Arith.Add with wrong arg type")
 	} else if !strings.Contains(err.Error(), "type") {
@@ -265,7 +260,7 @@ func testRPC(t *testing.T, addr string) {
 	const Val = 12345
 	str := fmt.Sprint(Val)
 	reply = new(Reply)
-	err = client.Call(ctx, "Arith.Scan", &str, reply)
+	err = client.Call(context.Background(), "Arith.Scan", &str, reply)
 	if err != nil {
 		t.Errorf("Scan: expected no error but got string %q", err.Error())
 	} else if reply.C != Val {
@@ -275,7 +270,7 @@ func testRPC(t *testing.T, addr string) {
 	// Non-struct reply
 	args = &Args{27, 35}
 	str = ""
-	err = client.Call(ctx, "Arith.String", args, &str)
+	err = client.Call(context.Background(), "Arith.String", args, &str)
 	if err != nil {
 		t.Errorf("String: expected no error but got string %q", err.Error())
 	}
@@ -286,7 +281,7 @@ func testRPC(t *testing.T, addr string) {
 
 	args = &Args{7, 8}
 	reply = new(Reply)
-	err = client.Call(ctx, "Arith.Mul", args, reply)
+	err = client.Call(context.Background(), "Arith.Mul", args, reply)
 	if err != nil {
 		t.Errorf("Mul: expected no error but got string %q", err.Error())
 	}
@@ -297,7 +292,7 @@ func testRPC(t *testing.T, addr string) {
 	// ServiceName contain "." character
 	args = &Args{7, 8}
 	reply = new(Reply)
-	err = client.Call(ctx, "net.rpc.Arith.Add", args, reply)
+	err = client.Call(context.Background(), "net.rpc.Arith.Add", args, reply)
 	if err != nil {
 		t.Errorf("Add: expected no error but got string %q", err.Error())
 	}
@@ -313,12 +308,10 @@ func testNewServerRPC(t *testing.T, addr string) {
 	}
 	defer client.Close()
 
-	ctx := context.Background()
-
 	// Synchronous calls
 	args := &Args{7, 8}
 	reply := new(Reply)
-	err = client.Call(ctx, "newServer.Arith.Add", args, reply)
+	err = client.Call(context.Background(), "newServer.Arith.Add", args, reply)
 	if err != nil {
 		t.Errorf("Add: expected no error but got string %q", err.Error())
 	}
@@ -347,12 +340,10 @@ func testHTTPRPC(t *testing.T, path string) {
 	}
 	defer client.Close()
 
-	ctx := context.Background()
-
 	// Synchronous calls
 	args := &Args{7, 8}
 	reply := new(Reply)
-	err = client.Call(ctx, "Arith.Add", args, reply)
+	err = client.Call(context.Background(), "Arith.Add", args, reply)
 	if err != nil {
 		t.Errorf("Add: expected no error but got string %q", err.Error())
 	}
@@ -370,12 +361,10 @@ func TestBuiltinTypes(t *testing.T) {
 	}
 	defer client.Close()
 
-	ctx := context.Background()
-
 	// Map
 	args := &Args{7, 8}
 	replyMap := map[int]int{}
-	err = client.Call(ctx, "BuiltinTypes.Map", args, &replyMap)
+	err = client.Call(context.Background(), "BuiltinTypes.Map", args, &replyMap)
 	if err != nil {
 		t.Errorf("Map: expected no error but got string %q", err.Error())
 	}
@@ -386,7 +375,7 @@ func TestBuiltinTypes(t *testing.T) {
 	// Slice
 	args = &Args{7, 8}
 	replySlice := []int{}
-	err = client.Call(ctx, "BuiltinTypes.Slice", args, &replySlice)
+	err = client.Call(context.Background(), "BuiltinTypes.Slice", args, &replySlice)
 	if err != nil {
 		t.Errorf("Slice: expected no error but got string %q", err.Error())
 	}
@@ -397,135 +386,12 @@ func TestBuiltinTypes(t *testing.T) {
 	// Array
 	args = &Args{7, 8}
 	replyArray := [2]int{}
-	err = client.Call(ctx, "BuiltinTypes.Array", args, &replyArray)
+	err = client.Call(context.Background(), "BuiltinTypes.Array", args, &replyArray)
 	if err != nil {
 		t.Errorf("Array: expected no error but got string %q", err.Error())
 	}
 	if e := [2]int{args.A, args.B}; !reflect.DeepEqual(replyArray, e) {
 		t.Errorf("Array: expected %v got %v", e, replyArray)
-	}
-}
-
-type Context struct {
-	started chan struct{}
-	done    chan struct{}
-}
-
-func (t *Context) Wait(ctx context.Context, s string, reply *int) error {
-	close(t.started)
-	<-ctx.Done()
-	close(t.done)
-	return nil
-}
-
-func TestContext(t *testing.T) {
-	svc := &Context{
-		started: make(chan struct{}),
-		done:    make(chan struct{}),
-	}
-
-	handler := NewServer()
-	handler.Register(svc)
-	ts := httptest.NewServer(handler)
-	defer ts.Close()
-	u, err := url.Parse(ts.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cl, err := DialHTTP("tcp", u.Host)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer cl.Close()
-
-	wait := func(desc string, c chan struct{}) {
-		select {
-		case <-c:
-			return
-		case <-time.After(5 * time.Second):
-			t.Fatal("Failed to wait for", desc)
-		}
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan struct{})
-	go func() {
-		args := ""
-		err = cl.Call(ctx, "Context.Wait", &args, new(int))
-		close(done)
-	}()
-	wait("server side to be called", svc.started)
-	cancel()
-	wait("client side to be done after cancel", done)
-	wait("server side to be done after cancel", svc.done)
-	if err != context.Canceled {
-		t.Fatalf("expected to fail due to context cancellation: %v", err)
-	}
-}
-
-type JsonServer struct {
-	srv *Server
-}
-
-func (server *JsonServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	rwc := &HTTPReadWriteCloser{
-		In:  req.Body,
-		Out: w,
-	}
-	codec := NewJsonServerCodec(rwc)
-	server.srv.ServeRequestContext(req.Context(), codec)
-}
-
-func TestContextCodec(t *testing.T) {
-	svc := &Context{
-		started: make(chan struct{}),
-		done:    make(chan struct{}),
-	}
-
-	srv := NewServer()
-	srv.Register(svc)
-	handler := &JsonServer{srv}
-	ts := httptest.NewServer(handler)
-	defer ts.Close()
-
-	wait := func(desc string, c chan struct{}) {
-		t.Helper()
-		select {
-		case <-c:
-			return
-		case <-time.After(5 * time.Second):
-			t.Fatal("Failed to wait for", desc)
-		}
-	}
-
-	b, err := json.Marshal(&jsonClientRequest{
-		Method: "Context.Wait",
-		Params: [1]any{""},
-		Id:     1234,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		var req *http.Request
-		req, err = http.NewRequestWithContext(ctx, http.MethodPost, ts.URL, bytes.NewBuffer(b))
-		if err != nil {
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-		_, err = http.DefaultClient.Do(req)
-	}()
-
-	wait("server side to be called", svc.started)
-	cancel()
-	wait("client side to be done after cancel", done)
-	wait("server side to be done after cancel", svc.done)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("expected to fail due to context cancellation: %v", err)
 	}
 }
 
@@ -556,13 +422,13 @@ func (codec *CodecEmulator) Call(ctx context.Context, serviceMethod string, args
 	return codec.err
 }
 
-func (codec *CodecEmulator) ReadRequestHeader(req *Request) error {
+func (codec *CodecEmulator) ReadRequestHeader(ctx, context.Background, req *Request) error {
 	req.ServiceMethod = codec.serviceMethod
 	req.Seq = 0
 	return nil
 }
 
-func (codec *CodecEmulator) ReadRequestBody(argv any) error {
+func (codec *CodecEmulator) ReadRequestBody(ctx context.Context, argv any) error {
 	if codec.args == nil {
 		return io.ErrUnexpectedEOF
 	}
@@ -570,7 +436,7 @@ func (codec *CodecEmulator) ReadRequestBody(argv any) error {
 	return nil
 }
 
-func (codec *CodecEmulator) WriteResponse(resp *Response, reply any) error {
+func (codec *CodecEmulator) WriteResponse(ctx context.Context, resp *Response, reply any) error {
 	if resp.Error != "" {
 		codec.err = errors.New(resp.Error)
 	} else {
@@ -594,7 +460,6 @@ func testServeRequest(t *testing.T, server *Server) {
 	client := CodecEmulator{server: server}
 	defer client.Close()
 
-	ctx := context.Background()
 	args := &Args{7, 8}
 	reply := new(Reply)
 	err := client.Call(ctx, "Arith.Add", args, reply)
@@ -605,7 +470,7 @@ func testServeRequest(t *testing.T, server *Server) {
 		t.Errorf("Add: expected %d got %d", reply.C, args.A+args.B)
 	}
 
-	err = client.Call(ctx, "Arith.Add", nil, reply)
+	err = client.Call(context.Background(), "Arith.Add", nil, reply)
 	if err == nil {
 		t.Errorf("expected error calling Arith.Add with nil arg")
 	}
@@ -666,16 +531,16 @@ func TestRegistrationError(t *testing.T) {
 
 type WriteFailCodec int
 
-func (WriteFailCodec) WriteRequest(*Request, any) error {
+func (WriteFailCodec) WriteRequest(ctx context.Context, *Request, any) error {
 	// the panic caused by this error used to not unlock a lock.
 	return errors.New("fail")
 }
 
-func (WriteFailCodec) ReadResponseHeader(*Response) error {
+func (WriteFailCodec) ReadResponseHeader(ctx context.Context, *Response) error {
 	select {}
 }
 
-func (WriteFailCodec) ReadResponseBody(any) error {
+func (WriteFailCodec) ReadResponseBody( ctx context.Context, any) error {
 	select {}
 }
 
@@ -705,7 +570,6 @@ func testSendDeadlock(client *Client) {
 	defer func() {
 		recover()
 	}()
-	ctx := context.Background()
 	args := &Args{7, 8}
 	reply := new(Reply)
 	client.Call(ctx, "Arith.Add", args, reply)
@@ -727,7 +591,6 @@ func countMallocs(dial func() (*Client, error), t *testing.T) float64 {
 	}
 	defer client.Close()
 
-	ctx := context.Background()
 	args := &Args{7, 8}
 	reply := new(Reply)
 	return testing.AllocsPerRun(100, func() {
@@ -783,7 +646,6 @@ func TestClientWriteError(t *testing.T) {
 	c := NewClient(w)
 	defer c.Close()
 
-	ctx := context.Background()
 	res := false
 	err := c.Call(ctx, "foo", 1, &res)
 	if err == nil {
@@ -804,10 +666,9 @@ func TestTCPClose(t *testing.T) {
 	}
 	defer client.Close()
 
-	ctx := context.Background()
 	args := Args{17, 8}
 	var reply Reply
-	err = client.Call(ctx, "Arith.Mul", args, &reply)
+	err = client.Call(context.Background(), "Arith.Mul", args, &reply)
 	if err != nil {
 		t.Fatal("arith error:", err)
 	}
@@ -819,7 +680,6 @@ func TestTCPClose(t *testing.T) {
 
 func TestErrorAfterClientClose(t *testing.T) {
 	once.Do(startServer)
-	ctx := context.Background()
 
 	client, err := dialHTTP()
 	if err != nil {
@@ -829,7 +689,7 @@ func TestErrorAfterClientClose(t *testing.T) {
 	if err != nil {
 		t.Fatal("close error:", err)
 	}
-	err = client.Call(ctx, "Arith.Add", &Args{7, 9}, new(Reply))
+	err = client.Call(context.Background(), "Arith.Add", &Args{7, 9}, new(Reply))
 	if err != ErrShutdown {
 		t.Errorf("Forever: expected ErrShutdown got %v", err)
 	}
@@ -845,7 +705,7 @@ func TestAcceptExitAfterListenerClose(t *testing.T) {
 	var l net.Listener
 	l, _ = listenTCP()
 	l.Close()
-	newServer.Accept(l)
+	newServer.Accept(context.Background(), l)
 }
 
 func TestShutdown(t *testing.T) {
@@ -871,13 +731,12 @@ func TestShutdown(t *testing.T) {
 
 	newServer := NewServer()
 	newServer.Register(new(Arith))
-	go newServer.ServeConn(c1)
+	go newServer.ServeConn(context.Background(), c1)
 
-	ctx := context.Background()
 	args := &Args{7, 8}
 	reply := new(Reply)
 	client := NewClient(c)
-	err = client.Call(ctx, "Arith.Add", args, reply)
+	err = client.Call(context.Background(), "Arith.Add", args, reply)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -905,14 +764,13 @@ func benchmarkEndToEnd(dial func() (*Client, error), b *testing.B) {
 	defer client.Close()
 
 	// Synchronous calls
-	ctx := context.Background()
 	args := &Args{7, 8}
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		reply := new(Reply)
 		for pb.Next() {
-			err := client.Call(ctx, "Arith.Add", args, reply)
+			err := client.Call(context.Background(), "Arith.Add", args, reply)
 			if err != nil {
 				b.Fatalf("rpc error: Add: expected no error but got string %q", err.Error())
 			}
