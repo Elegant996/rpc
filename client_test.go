@@ -18,9 +18,9 @@ type shutdownCodec struct {
 	closed    bool
 }
 
-func (c *shutdownCodec) WriteRequest(ctx context.Context, *Request, any) error { return nil }
-func (c *shutdownCodec) ReadResponseBody(ctx context.Context, any) error       { return nil }
-func (c *shutdownCodec) ReadResponseHeader(ctx context.Context, *Response) error {
+func (c *shutdownCodec) WriteRequest(context.Context, *Request, any) error { return nil }
+func (c *shutdownCodec) ReadResponseBody(context.Context, any) error       { return nil }
+func (c *shutdownCodec) ReadResponseHeader(context.Context, *Response) error {
 	c.responded <- 1
 	return errors.New("shutdownCodec ReadResponseHeader")
 }
