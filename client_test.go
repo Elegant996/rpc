@@ -70,7 +70,7 @@ func TestGobError(t *testing.T) {
 	}
 	go Accept(context.Background(), listen)
 
-	client, err := DialContext(context.Background(), "tcp", listen.Addr().String())
+	client, err := Dial("tcp", listen.Addr().String())
 	if err != nil {
 		panic(err)
 	}
