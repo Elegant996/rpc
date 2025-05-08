@@ -164,7 +164,7 @@ func TestRPC(t *testing.T) {
 }
 
 func testRPC(t *testing.T, addr string) {
-	client, err := Dial("tcp", addr)
+	client, err := DialContext(context.Background(), "tcp", addr)
 	if err != nil {
 		t.Fatal("dialing", err)
 	}
@@ -302,7 +302,7 @@ func testRPC(t *testing.T, addr string) {
 }
 
 func testNewServerRPC(t *testing.T, addr string) {
-	client, err := Dial("tcp", addr)
+	client, err := DialContext(context.Background(), "tcp", addr)
 	if err != nil {
 		t.Fatal("dialing", err)
 	}
@@ -576,7 +576,7 @@ func testSendDeadlock(client *Client) {
 }
 
 func dialDirect() (*Client, error) {
-	return Dial("tcp", serverAddr)
+	return DialContext(context.Background(), "tcp", serverAddr)
 }
 
 func dialHTTP() (*Client, error) {
@@ -720,7 +720,7 @@ func TestShutdown(t *testing.T) {
 		}
 		ch <- c
 	}()
-	c, err := net.Dial("tcp", l.Addr().String())
+	c, err := net.DialContext(context.Background(), "tcp", l.Addr().String())
 	if err != nil {
 		t.Fatal(err)
 	}

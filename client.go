@@ -333,8 +333,8 @@ func DialHTTPPathTimeout(network, address, path string, timeout time.Duration) (
 }
 
 // Dial connects to an RPC server at the specified network address.
-func Dial(network, address string) (*Client, error) {
-	conn, err := net.Dial(network, address)
+func Dial(ctx context.Context, network string, address string) (*Client, error) {
+	conn, err := net.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
 	}
