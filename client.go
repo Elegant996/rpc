@@ -98,7 +98,7 @@ type Client struct {
 // discarded.
 // See [NewClient]'s comment for information about concurrent access.
 type ClientCodec interface {
-	WriteRequest(*Request, any) error
+	WriteRequest(context.Context, *Request, any) error
 	ReadResponseHeader(context.Context, *Response) error
 	ReadResponseBody(context.Context, any) error
 

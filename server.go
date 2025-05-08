@@ -498,7 +498,7 @@ func (server *Server) ServeConn(ctx context.Context, conn io.ReadWriteCloser) {
 // decode requests and encode responses.
 func (server *Server) ServeCodec(ctx context.Context, codec ServerCodec) {
 	sending := new(sync.Mutex)
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	wg := new(sync.WaitGroup)
 	for {
@@ -587,7 +587,7 @@ func (server *Server) freeResponse(resp *Response) {
 }
 
 func (server *Server) readRequest(codec ServerCodec) (ctx context.Context, service *service, mtype *methodType, req *Request, argv, replyv reflect.Value, keepReading bool, err error) {
-	service, mtype, req, keepReading, err = server.readRequestHeader(ctx, codec)
+	ctx, service, mtype, req, keepReading, err = server.readRequestHeader(ctx, codec)
 	if err != nil {
 		if !keepReading {
 			return
@@ -748,7 +748,7 @@ func (server *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	io.WriteString(conn, "HTTP/1.0 "+connected+"\n\n")
-	server.ServeConn(r.Context(), conn)
+	server.ServeConn(req.Context(), conn)
 }
 
 // HandleHTTP registers an HTTP handler for RPC messages on rpcPath,
