@@ -91,13 +91,13 @@ type ClientCodecError struct {
 	WriteRequestError error
 }
 
-func (c *ClientCodecError) WriteRequest(ctx context.Context, *Request, any) error {
+func (c *ClientCodecError) WriteRequest(context.Context, *Request, any) error {
 	return c.WriteRequestError
 }
-func (c *ClientCodecError) ReadResponseHeader(ctx context.Context, *Response) error {
+func (c *ClientCodecError) ReadResponseHeader(context.Context, *Response) error {
 	return nil
 }
-func (c *ClientCodecError) ReadResponseBody(ctx context.Context, any) error {
+func (c *ClientCodecError) ReadResponseBody(context.Context, any) error {
 	return nil
 }
 func (c *ClientCodecError) Close() error {
