@@ -98,9 +98,9 @@ type Client struct {
 // discarded.
 // See [NewClient]'s comment for information about concurrent access.
 type ClientCodec interface {
-	WriteRequest(*Request, any) error
-	ReadResponseHeader(*Response) error
-	ReadResponseBody(any) error
+	WriteRequest(context.Context, *Request, any) error
+	ReadResponseHeader(context.Context, *Response) error
+	ReadResponseBody(context.Context, any) error
 
 	Close() error
 }
@@ -139,7 +139,7 @@ func (client *Client) send(ctx context.Context, call *Call) {
 	// Encode and send the request.
 	client.request.Seq = seq
 	client.request.ServiceMethod = call.ServiceMethod
-	err := client.codec.WriteRequest(&client.request, call.Args)
+	err := client.codec.WriteRequest(ctx, &client.request, call.Args)
 	if trace != nil && trace.WriteRequestDone != nil {
 		trace.WriteRequestDone(err)
 	}
@@ -158,9 +158,10 @@ func (client *Client) send(ctx context.Context, call *Call) {
 func (client *Client) input() {
 	var err error
 	var response Response
+	ctx := context.TODO()
 	for err == nil {
 		response = Response{}
-		err = client.codec.ReadResponseHeader(&response)
+		err = client.codec.ReadResponseHeader(ctx, &response)
 		if err != nil {
 			break
 		}
@@ -177,7 +178,7 @@ func (client *Client) input() {
 			// removed; response is a server telling us about an
 			// error reading request body. We should still attempt
 			// to read error body, but there's no one to give it to.
-			err = client.codec.ReadResponseBody(nil)
+			err = client.codec.ReadResponseBody(ctx, nil)
 			if err != nil {
 				err = errors.New("reading error body: " + err.Error())
 			}
@@ -186,13 +187,13 @@ func (client *Client) input() {
 			// any subsequent requests will get the ReadResponseBody
 			// error if there is one.
 			call.Error = ServerError(response.Error)
-			err = client.codec.ReadResponseBody(nil)
+			err = client.codec.ReadResponseBody(ctx, nil)
 			if err != nil {
 				err = errors.New("reading error body: " + err.Error())
 			}
 			call.done()
 		default:
-			err = client.codec.ReadResponseBody(call.Reply)
+			err = client.codec.ReadResponseBody(ctx, call.Reply)
 			if err != nil {
 				call.Error = errors.New("reading body " + err.Error())
 			}
@@ -268,7 +269,7 @@ type gobClientCodec struct {
 	encBuf *bufio.Writer
 }
 
-func (c *gobClientCodec) WriteRequest(r *Request, body any) (err error) {
+func (c *gobClientCodec) WriteRequest(ctx context.Context, r *Request, body any) (err error) {
 	if err = c.enc.Encode(r); err != nil {
 		return
 	}
@@ -278,11 +279,11 @@ func (c *gobClientCodec) WriteRequest(r *Request, body any) (err error) {
 	return c.encBuf.Flush()
 }
 
-func (c *gobClientCodec) ReadResponseHeader(r *Response) error {
+func (c *gobClientCodec) ReadResponseHeader(ctx context.Context, r *Response) error {
 	return c.dec.Decode(r)
 }
 
-func (c *gobClientCodec) ReadResponseBody(body any) error {
+func (c *gobClientCodec) ReadResponseBody(ctx context.Context, body any) error {
 	return c.dec.Decode(body)
 }
 
