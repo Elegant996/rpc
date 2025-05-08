@@ -586,8 +586,8 @@ func (server *Server) freeResponse(resp *Response) {
 	server.respLock.Unlock()
 }
 
-func (server *Server) readRequest(codec ServerCodec) (ctx context.Context, service *service, mtype *methodType, req *Request, argv, replyv reflect.Value, keepReading bool, err error) {
-	ctx, service, mtype, req, keepReading, err = server.readRequestHeader(ctx, codec)
+func (server *Server) readRequest(ctx context.Context, codec ServerCodec) (ctx2 context.Context, service *service, mtype *methodType, req *Request, argv, replyv reflect.Value, keepReading bool, err error) {
+	ctx2, service, mtype, req, keepReading, err = server.readRequestHeader(ctx, codec)
 	if err != nil {
 		if !keepReading {
 			return
