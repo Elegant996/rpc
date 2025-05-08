@@ -1,4 +1,4 @@
-# rpc  [![Build Status](https://travis-ci.org/keegancsmith/rpc.svg?branch=master)](https://travis-ci.org/keegancsmith/rpc)
+# rpc  [![Build Status](https://github.com/Elegant996/rpc/workflows/test/badge.svg)](https://github.com/Elegant996/rpc/actions)
 
 This is a fork of the stdlib [net/rpc](https://golang.org/pkg/net/rpc/) which
 is frozen. It adds support for `context.Context` on the client and server,
@@ -40,7 +40,7 @@ freeze net/rpc](https://github.com/golang/go/issues/16844).
 ## Details
 
 Last forked from commit
-[bfadd78986](https://github.com/golang/go/commit/bfadd78986) on 7 September
-2022.
+[842e4b5](https://github.com/golang/go/commit/842e4b5) on 5 February
+2025.
 
 Cancellation implemented via the rpc call `_goRPC_.Cancel`.
