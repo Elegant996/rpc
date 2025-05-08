@@ -531,16 +531,16 @@ func TestRegistrationError(t *testing.T) {
 
 type WriteFailCodec int
 
-func (WriteFailCodec) WriteRequest(ctx context.Context, *Request, any) error {
+func (WriteFailCodec) WriteRequest(context.Context, *Request, any) error {
 	// the panic caused by this error used to not unlock a lock.
 	return errors.New("fail")
 }
 
-func (WriteFailCodec) ReadResponseHeader(ctx context.Context, *Response) error {
+func (WriteFailCodec) ReadResponseHeader(context.Context, *Response) error {
 	select {}
 }
 
-func (WriteFailCodec) ReadResponseBody(ctx context.Context, any) error {
+func (WriteFailCodec) ReadResponseBody(context.Context, any) error {
 	select {}
 }
 
