@@ -405,16 +405,16 @@ type CodecEmulator struct {
 	err           error
 }
 
-func (codec *CodecEmulator) Call(ctx context.Context, serviceMethod string, args *Args, reply *Reply) error {
+func (codec *CodecEmulator) Call(serviceMethod string, args *Args, reply *Reply) error {
 	codec.serviceMethod = serviceMethod
 	codec.args = args
 	codec.reply = reply
 	codec.err = nil
 	var serverError error
 	if codec.server == nil {
-		serverError = ServeRequest(ctx, codec)
+		serverError = ServeRequest(context.Background(), codec)
 	} else {
-		serverError = codec.server.ServeRequest(ctx, codec)
+		serverError = codec.server.ServeRequest(context.Background(), codec)
 	}
 	if codec.err == nil && serverError != nil {
 		codec.err = serverError
