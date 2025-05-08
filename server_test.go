@@ -422,10 +422,10 @@ func (codec *CodecEmulator) Call(ctx context.Context, serviceMethod string, args
 	return codec.err
 }
 
-func (codec *CodecEmulator) ReadRequestHeader(ctx context.Context, req *Request) error {
+func (codec *CodecEmulator) ReadRequestHeader(ctx context.Context, req *Request) (context.Context, error) {
 	req.ServiceMethod = codec.serviceMethod
 	req.Seq = 0
-	return nil
+	return ctx, nil
 }
 
 func (codec *CodecEmulator) ReadRequestBody(ctx context.Context, argv any) error {
